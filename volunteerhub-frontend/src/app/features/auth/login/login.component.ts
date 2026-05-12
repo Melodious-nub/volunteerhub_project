@@ -41,9 +41,18 @@ import { AuthService } from '../../../core/services/auth.service';
             </div>
             <div class="space-y-1">
               <label class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-2">Password</label>
-              <input type="password" [(ngModel)]="password" name="password" required
-                     class="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none text-sm font-medium" 
-                     placeholder="••••••••">
+              <div class="relative group">
+                <input [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password" required
+                       class="w-full pl-6 pr-14 py-4 bg-slate-50 border-none rounded-2xl focus:ring-4 focus:ring-primary-500/10 outline-none text-sm font-medium transition-all" 
+                       placeholder="••••••••">
+                <button type="button" 
+                        (click)="showPassword.set(!showPassword())"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-primary-500 transition-colors rounded-xl hover:bg-white"
+                        [title]="showPassword() ? 'Hide password' : 'Show password'">
+                  <svg *ngIf="!showPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg *ngIf="showPassword()" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -64,7 +73,7 @@ import { AuthService } from '../../../core/services/auth.service';
             <a [routerLink]="activeRole() === 'ngo' ? '/auth/register/ngo' : '/auth/register/volunteer'" 
                class="text-primary-600 font-bold hover:underline ml-1">
                Register Now
-            </a>
+             </a>
           </p>
         </div>
       </div>
@@ -87,6 +96,7 @@ export class LoginComponent implements OnInit {
   private route = inject(ActivatedRoute);
 
   activeRole = signal<'volunteer' | 'ngo' | 'admin'>('volunteer');
+  showPassword = signal(false);
   
   roles: { id: 'volunteer' | 'ngo' | 'admin', name: string }[] = [
     { id: 'volunteer', name: 'Volunteer' },

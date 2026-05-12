@@ -3,21 +3,27 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { ToastrService } from 'ngx-toastr';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-all-campaigns',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ConfirmModalComponent],
   template: `
-    <div class="p-10 space-y-8 animate-in">
+    <div class="p-10 space-y-8 animate-in relative">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-3xl font-display font-extrabold text-slate-900">Mission Oversight</h1>
-          <p class="text-slate-500 text-sm">Monitoring and managing all humanitarian efforts across the platform.</p>
+          <h1 class="text-3xl font-display font-extrabold text-slate-900">Campaign Management</h1>
+          <p class="text-slate-500 text-sm">Supervising all fundraising and volunteer missions.</p>
         </div>
-        <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-          <span class="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></span>
-          <span class="text-xs font-bold text-slate-900">{{ campaigns().length }} Total Missions</span>
+        <div class="flex items-center gap-4">
+          <button (click)="fetchCampaigns()" class="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary-500 hover:border-primary-500/30 transition-all shadow-sm group">
+            <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i>
+          </button>
+          <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+            <span class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-bold text-slate-900">{{ campaigns().length }} Global Missions</span>
+          </div>
         </div>
       </div>
 
@@ -26,55 +32,50 @@ import { ToastrService } from 'ngx-toastr';
           <table class="w-full text-left">
             <thead class="bg-slate-50/50 border-b border-slate-100">
               <tr>
-                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Mission & NGO</th>
-                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Funding Status</th>
-                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Deployment</th>
+                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Mission</th>
+                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">NGO Organizer</th>
+                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Progress</th>
                 <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Status</th>
                 <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
-              <tr *ngFor="let camp of campaigns()" class="hover:bg-slate-50/50 transition-all group">
+              <tr *ngFor="let campaign of campaigns()" class="hover:bg-slate-50/50 transition-all group">
                 <td class="px-8 py-6">
                   <div class="flex items-center gap-4">
-                    <img [src]="camp.image" class="w-14 h-14 rounded-2xl object-cover shadow-sm">
+                    <div class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-xl">📢</div>
                     <div>
-                      <p class="font-bold text-slate-900 text-sm leading-tight mb-1">{{ camp.title }}</p>
-                      <p class="text-[10px] text-primary-600 font-bold uppercase tracking-widest">{{ camp.ngo?.name }}</p>
+                      <p class="font-bold text-slate-900">{{ campaign.title }}</p>
+                      <p class="text-[10px] text-primary-500 font-bold uppercase tracking-widest">{{ campaign.category }}</p>
                     </div>
                   </div>
                 </td>
                 <td class="px-8 py-6">
-                  <div class="space-y-2 max-w-[150px]">
-                    <div class="flex items-center justify-between text-[10px] font-bold">
-                      <span class="text-slate-400">৳{{ camp.raisedAmount.toLocaleString() }}</span>
-                      <span class="text-primary-500">{{ getPercent(camp) }}%</span>
-                    </div>
-                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div class="h-full bg-primary-500" [style.width.%]="getPercent(camp)"></div>
-                    </div>
-                  </div>
+                  <p class="text-sm font-bold text-slate-600">{{ campaign.ngo?.name }}</p>
                 </td>
                 <td class="px-8 py-6">
-                  <p class="text-xs font-bold text-slate-600">{{ camp.volunteersJoined.length }} / {{ camp.volunteersRequired }} Vol.</p>
-                  <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold">{{ camp.location }}</p>
+                  <div class="w-48">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="text-[10px] font-bold text-slate-400">{{ getPercent(campaign) }}%</span>
+                      <span class="text-[10px] font-bold text-slate-900">৳{{ campaign.raisedAmount.toLocaleString() }}</span>
+                    </div>
+                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div class="h-full bg-primary-500 rounded-full" [style.width.%]="getPercent(campaign)"></div>
+                    </div>
+                  </div>
                 </td>
                 <td class="px-8 py-6">
                   <span [ngClass]="{
-                    'bg-emerald-100 text-emerald-600': camp.status === 'active',
-                    'bg-slate-100 text-slate-500': camp.status === 'completed',
-                    'bg-red-100 text-red-600': camp.status === 'cancelled'
+                    'bg-emerald-100 text-emerald-600': campaign.status === 'active',
+                    'bg-blue-100 text-blue-600': campaign.status === 'completed',
+                    'bg-slate-100 text-slate-500': campaign.status === 'draft'
                   }" class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-current border-opacity-10">
-                    {{ camp.status }}
+                    {{ campaign.status }}
                   </span>
                 </td>
                 <td class="px-8 py-6 text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <button (click)="toggleStatus(camp)" [title]="camp.status === 'active' ? 'Mark Completed' : 'Activate'"
-                            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-primary-500 hover:text-white shadow-sm">
-                      <i class="fas" [class.fa-check-circle]="camp.status === 'active'" [class.fa-play-circle]="camp.status !== 'active'"></i>
-                    </button>
-                    <button (click)="deleteCampaign(camp._id)" title="Remove Mission"
+                    <button (click)="openDeleteModal(campaign)" title="Delete Mission"
                             class="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-red-500 hover:text-white shadow-sm">
                       <i class="fas fa-trash-alt text-xs"></i>
                     </button>
@@ -84,26 +85,25 @@ import { ToastrService } from 'ngx-toastr';
             </tbody>
           </table>
         </div>
-        
-        <div *ngIf="campaigns().length === 0" class="p-20 text-center">
-          <div class="text-5xl mb-6">📢</div>
-          <p class="text-slate-500 font-bold">No missions have been launched yet.</p>
-        </div>
       </div>
+
+      <app-confirm-modal 
+        *ngIf="showDeleteModal()"
+        [title]="'Delete Campaign'"
+        [message]="'Are you sure you want to permanently delete the mission: ' + selectedCampaign()?.title + '? All donation history for this mission will be archived.'"
+        (onConfirm)="deleteCampaign()"
+        (onCancel)="showDeleteModal.set(false)">
+      </app-confirm-modal>
     </div>
-  `,
-  styles: [`
-    .animate-in { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-    @keyframes slideUp { 
-      from { opacity: 0; transform: translateY(20px); } 
-      to { opacity: 1; transform: translateY(0); } 
-    }
-  `]
+  `
 })
 export class AllCampaignsComponent implements OnInit {
   private http = inject(HttpClient);
   private toastr = inject(ToastrService);
   campaigns = signal<any[]>([]);
+
+  showDeleteModal = signal(false);
+  selectedCampaign = signal<any>(null);
 
   ngOnInit() {
     this.fetchCampaigns();
@@ -115,35 +115,25 @@ export class AllCampaignsComponent implements OnInit {
     });
   }
 
-  toggleStatus(camp: any) {
-    const newStatus = camp.status === 'active' ? 'completed' : 'active';
-    this.http.put<any>(`${environment.apiUrl}/admin/campaigns/${camp._id}`, { status: newStatus }).subscribe({
-      next: (res) => {
-        if (res.success) {
-          this.toastr.info(`Mission status updated to ${newStatus}`);
-          this.fetchCampaigns();
-        }
-      },
-      error: () => this.toastr.error('Failed to update status')
-    });
+  getPercent(c: any) {
+    return Math.min(Math.round((c.raisedAmount / c.goalAmount) * 100), 100) || 0;
   }
 
-  deleteCampaign(id: string) {
-    if (!confirm('Are you sure you want to delete this mission? This cannot be undone.')) return;
-    
+  openDeleteModal(campaign: any) {
+    this.selectedCampaign.set(campaign);
+    this.showDeleteModal.set(true);
+  }
+
+  deleteCampaign() {
+    const id = this.selectedCampaign()?._id;
     this.http.delete<any>(`${environment.apiUrl}/admin/campaigns/${id}`).subscribe({
       next: (res) => {
         if (res.success) {
-          this.toastr.warning('Mission deleted from platform');
+          this.toastr.warning('Campaign deleted successfully');
+          this.showDeleteModal.set(false);
           this.fetchCampaigns();
         }
-      },
-      error: () => this.toastr.error('Failed to delete mission')
+      }
     });
-  }
-
-  getPercent(c: any) {
-    if (!c.goalAmount) return 0;
-    return Math.min(100, Math.floor((c.raisedAmount / c.goalAmount) * 100));
   }
 }

@@ -4,7 +4,12 @@ const EmergencySOSSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
-    required: true
+    required: false
+  },
+  notifiedTo: {
+    type: String,
+    enum: ['admin', 'ngo', 'both'],
+    default: 'admin'
   },
   location: {
     type: {

@@ -20,4 +20,25 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// @route   POST /api/notifications
+// @desc    Create a broadcast notification (Admin only)
+const { authorize } = require('../middleware/auth');
+router.post('/', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { title, message, type, target } = req.body;
+    
+    const notification = await Notification.create({
+      title,
+      message,
+      type: type || 'broadcast',
+      target: target || 'all',
+      sender: req.user.id
+    });
+
+    res.status(201).json({ success: true, data: notification });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

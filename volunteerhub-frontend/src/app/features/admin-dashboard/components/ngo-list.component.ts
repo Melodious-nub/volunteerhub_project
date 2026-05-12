@@ -3,21 +3,27 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { ToastrService } from 'ngx-toastr';
+import { ConfirmModalComponent } from '../../../shared/components/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-ngo-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ConfirmModalComponent],
   template: `
-    <div class="p-10 space-y-8 animate-in">
+    <div class="p-10 space-y-8 animate-in relative">
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-display font-extrabold text-slate-900">NGO Partners</h1>
           <p class="text-slate-500 text-sm">Manage registered non-governmental organizations and their access.</p>
         </div>
-        <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-          <span class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></span>
-          <span class="text-xs font-bold text-slate-900">{{ ngos().length }} Total Registered</span>
+        <div class="flex items-center gap-4">
+          <button (click)="fetchNgos()" class="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary-500 hover:border-primary-500/30 transition-all shadow-sm group">
+            <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i>
+          </button>
+          <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+            <span class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-bold text-slate-900">{{ ngos().length }} Total Registered</span>
+          </div>
         </div>
       </div>
 
@@ -66,7 +72,7 @@ import { ToastrService } from 'ngx-toastr';
                             class="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-primary-500 hover:text-white shadow-sm">
                       <i class="fas" [class.fa-toggle-on]="ngo.status === 'active'" [class.fa-toggle-off]="ngo.status !== 'active'"></i>
                     </button>
-                    <button (click)="deleteNgo(ngo._id)" title="Remove NGO"
+                    <button (click)="openDeleteModal(ngo)" title="Remove NGO"
                             class="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-red-500 hover:text-white shadow-sm">
                       <i class="fas fa-trash-alt text-xs"></i>
                     </button>
@@ -76,26 +82,25 @@ import { ToastrService } from 'ngx-toastr';
             </tbody>
           </table>
         </div>
-        
-        <div *ngIf="ngos().length === 0" class="p-20 text-center">
-          <div class="text-5xl mb-6">🏜️</div>
-          <p class="text-slate-500 font-bold">No NGOs found in the system.</p>
-        </div>
       </div>
+
+      <app-confirm-modal 
+        *ngIf="showDeleteModal()"
+        [title]="'Delete NGO Partner'"
+        [message]="'Are you sure you want to remove ' + selectedNgo()?.name + '? This action will revoke all access and cannot be undone.'"
+        (onConfirm)="deleteNgo()"
+        (onCancel)="showDeleteModal.set(false)">
+      </app-confirm-modal>
     </div>
-  `,
-  styles: [`
-    .animate-in { animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-    @keyframes slideUp { 
-      from { opacity: 0; transform: translateY(20px); } 
-      to { opacity: 1; transform: translateY(0); } 
-    }
-  `]
+  `
 })
 export class NgoListComponent implements OnInit {
   private http = inject(HttpClient);
   private toastr = inject(ToastrService);
   ngos = signal<any[]>([]);
+  
+  showDeleteModal = signal(false);
+  selectedNgo = signal<any>(null);
 
   ngOnInit() {
     this.fetchNgos();
@@ -115,22 +120,25 @@ export class NgoListComponent implements OnInit {
           this.toastr.success(`${ngo.name} is now ${newStatus}`);
           this.fetchNgos();
         }
-      },
-      error: () => this.toastr.error('Failed to update status')
+      }
     });
   }
 
-  deleteNgo(id: string) {
-    if (!confirm('Are you sure you want to delete this NGO? This action cannot be undone.')) return;
-    
+  openDeleteModal(ngo: any) {
+    this.selectedNgo.set(ngo);
+    this.showDeleteModal.set(true);
+  }
+
+  deleteNgo() {
+    const id = this.selectedNgo()?._id;
     this.http.delete<any>(`${environment.apiUrl}/admin/users/${id}`).subscribe({
       next: (res) => {
         if (res.success) {
           this.toastr.warning('NGO deleted successfully');
+          this.showDeleteModal.set(false);
           this.fetchNgos();
         }
-      },
-      error: () => this.toastr.error('Failed to delete NGO')
+      }
     });
   }
 }

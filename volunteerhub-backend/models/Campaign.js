@@ -54,6 +54,11 @@ const CampaignSchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Please add an end date']
   },
+  updates: [{
+    title: String,
+    message: String,
+    date: { type: Date, default: Date.now }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

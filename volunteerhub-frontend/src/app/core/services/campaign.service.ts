@@ -18,6 +18,11 @@ export interface Campaign {
   startDate: string;
   endDate: string;
   ngo?: any;
+  updates?: {
+    title: string;
+    message: string;
+    date: string;
+  }[];
 }
 
 @Injectable({

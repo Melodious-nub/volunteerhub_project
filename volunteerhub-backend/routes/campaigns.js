@@ -112,4 +112,76 @@ router.post('/', protect, authorize('ngo', 'admin'), async (req, res) => {
   }
 });
 
+// @route   PUT /api/campaigns/:id
+// @desc    Update a campaign
+router.put('/:id', protect, authorize('ngo', 'admin'), async (req, res) => {
+  try {
+    let campaign = await Campaign.findById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
+
+    // Make sure user is campaign owner
+    if (campaign.ngo.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized to update this campaign' });
+    }
+
+    campaign = await Campaign.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true
+    });
+
+    res.json({ success: true, data: campaign });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// @route   DELETE /api/campaigns/:id
+// @desc    Delete a campaign
+router.delete('/:id', protect, authorize('ngo', 'admin'), async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
+
+    // Make sure user is campaign owner
+    if (campaign.ngo.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized to delete this campaign' });
+    }
+
+    await campaign.deleteOne();
+    res.json({ success: true, message: 'Campaign removed' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/campaigns/:id/updates
+// @desc    Add update to a campaign
+router.post('/:id/updates', protect, authorize('ngo', 'admin'), async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
+
+    if (campaign.ngo.toString() !== req.user.id && req.user.role !== 'admin') {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
+    campaign.updates.unshift({
+      title: req.body.title,
+      message: req.body.message,
+      date: new Date()
+    });
+
+    await campaign.save();
+    res.json({ success: true, data: campaign.updates });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

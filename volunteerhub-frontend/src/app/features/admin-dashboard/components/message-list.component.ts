@@ -16,9 +16,14 @@ import { ToastrService } from 'ngx-toastr';
           <h1 class="text-2xl md:text-3xl font-display font-extrabold text-slate-900">User Inquiries</h1>
           <p class="text-slate-500 text-sm">Direct communications from the VolunteerHub community.</p>
         </div>
-        <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 w-fit">
-          <span class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></span>
-          <span class="text-xs font-bold text-slate-900">{{ messages().length }} Total Messages</span>
+        <div class="flex items-center gap-4">
+          <button (click)="fetchMessages()" class="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary-500 hover:border-primary-500/30 transition-all shadow-sm group">
+            <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i>
+          </button>
+          <div class="px-6 py-3 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3 w-fit">
+            <span class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-bold text-slate-900">{{ messages().length }} Total Messages</span>
+          </div>
         </div>
       </div>
 

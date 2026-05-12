@@ -1,62 +1,89 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
-import { CampaignService } from '../../core/services/campaign.service';
+import { environment } from '../../../environments/environment';
+
+interface ApiResponse {
+  success: boolean;
+  data: any;
+  message?: string;
+}
 
 @Component({
   selector: 'app-volunteer-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="dashboard-layout min-h-screen bg-slate-50 flex">
+    <div class="dashboard-layout min-h-screen bg-slate-50 flex relative overflow-hidden">
+      <!-- MOBILE OVERLAY -->
+      <div *ngIf="isSidebarOpen()" 
+           (click)="isSidebarOpen.set(false)"
+           class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] lg:hidden animate-fade-in">
+      </div>
+
       <!-- SIDEBAR -->
-      <aside class="w-72 bg-slate-900 text-white flex flex-col shrink-0 transition-all duration-300 h-screen sticky top-0 overflow-y-auto custom-scrollbar">
+      <aside [class.-translate-x-full]="!isSidebarOpen()"
+             class="fixed lg:sticky top-0 left-0 w-72 bg-slate-900 text-white flex flex-col shrink-0 h-screen z-[110] transition-transform duration-300 lg:translate-x-0 overflow-y-auto custom-scrollbar shadow-2xl lg:shadow-none">
+        
         <div class="p-8">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">💚</div>
-            <span class="text-xl font-display font-extrabold tracking-tight">Volunteer<span class="text-primary-400">Hub</span></span>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-500/20">💚</div>
+              <div>
+                <div class="text-base font-display font-bold text-white leading-none tracking-tight">Volunteer<span class="text-emerald-500">Hub</span></div>
+                <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Volunteer Space</span>
+              </div>
+            </div>
+            <button (click)="isSidebarOpen.set(false)" class="lg:hidden text-slate-400 hover:text-white">
+              <i class="fas fa-times text-xl"></i>
+            </button>
           </div>
         </div>
 
         <div class="px-6 py-4">
           <div class="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-            <div class="w-12 h-12 bg-gradient-to-br from-accent-400 to-primary-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+            <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-primary-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shrink-0">
               {{ user()?.name?.charAt(0) || 'V' }}
             </div>
             <div class="overflow-hidden">
               <h4 class="font-bold text-sm truncate">{{ user()?.name }}</h4>
-              <p class="text-[10px] text-accent-400 uppercase font-bold tracking-widest">Active Volunteer</p>
+              <p class="text-[10px] text-emerald-400 uppercase font-bold tracking-widest">Active Volunteer</p>
             </div>
           </div>
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2">
           <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mb-2">Overview</div>
-          <a routerLink="/volunteer" routerLinkActive="bg-primary-500 text-white shadow-lg shadow-primary-500/20" [routerLinkActiveOptions]="{exact: true}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
+          <a routerLink="/volunteer" routerLinkActive="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" [routerLinkActiveOptions]="{exact: true}" (click)="isSidebarOpen.set(false)" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
             <i class="fas fa-tachometer-alt w-5 group-hover:scale-110 transition-transform"></i>
             <span class="font-bold text-sm">Dashboard</span>
           </a>
           
           <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mt-6 mb-2">My Work</div>
-          <a routerLink="/volunteer/tasks" routerLinkActive="bg-primary-500 text-white shadow-lg shadow-primary-500/20" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group relative">
+          <a routerLink="/volunteer/explore" routerLinkActive="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" (click)="isSidebarOpen.set(false)" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
+            <i class="fas fa-search-location w-5 group-hover:scale-110 transition-transform"></i>
+            <span class="font-bold text-sm">Explore Missions</span>
+          </a>
+          <a routerLink="/volunteer/tasks" routerLinkActive="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" (click)="isSidebarOpen.set(false)" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
             <i class="fas fa-tasks w-5 group-hover:scale-110 transition-transform"></i>
             <span class="font-bold text-sm">My Tasks</span>
           </a>
-          <a routerLink="/volunteer/history" routerLinkActive="bg-primary-500 text-white shadow-lg shadow-primary-500/20" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
+          <a routerLink="/volunteer/history" routerLinkActive="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" (click)="isSidebarOpen.set(false)" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
             <i class="fas fa-history w-5 group-hover:scale-110 transition-transform"></i>
-            <span class="font-bold text-sm">History</span>
+            <span class="font-bold text-sm">Activity Log</span>
           </a>
 
-          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mt-6 mb-2">Achievements</div>
-          <a routerLink="/volunteer/certificates" routerLinkActive="bg-primary-500 text-white shadow-lg shadow-primary-500/20" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 mt-6 mb-2">Rewards</div>
+          <a routerLink="/volunteer/certificates" routerLinkActive="bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" (click)="isSidebarOpen.set(false)" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-white/5 text-slate-400 hover:text-white group">
             <i class="fas fa-certificate w-5 group-hover:scale-110 transition-transform"></i>
             <span class="font-bold text-sm">Certificates</span>
           </a>
         </nav>
 
         <div class="p-6">
-          <button (click)="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold text-sm transition-all hover:bg-red-500 hover:text-white shadow-lg shadow-red-500/0 hover:shadow-red-500/20">
+          <button (click)="logout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold text-sm transition-all hover:bg-red-500 hover:text-white shadow-lg">
             <i class="fas fa-sign-out-alt"></i>
             <span>Sign Out</span>
           </button>
@@ -64,184 +91,106 @@ import { CampaignService } from '../../core/services/campaign.service';
       </aside>
 
       <!-- MAIN CONTENT -->
-      <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+      <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
         <!-- TOPBAR -->
-        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 sticky top-0 z-20">
-          <div>
-            <h2 class="text-xl font-display font-extrabold text-slate-900">Volunteer Dashboard</h2>
-            <div class="flex items-center gap-2 text-xs text-slate-400 font-medium">
-              <a routerLink="/" class="hover:text-primary-500">Home</a>
-              <i class="fas fa-chevron-right text-[8px]"></i>
-              <span>Dashboard</span>
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 md:px-10 shrink-0 sticky top-0 z-50">
+          <div class="flex items-center gap-4">
+            <button (click)="isSidebarOpen.set(true)" class="lg:hidden w-10 h-10 flex items-center justify-center bg-slate-50 rounded-xl text-slate-600">
+              <i class="fas fa-bars text-lg"></i>
+            </button>
+            <div class="hidden sm:block">
+              <h2 class="text-xl font-display font-extrabold text-slate-900 leading-tight">Volunteer Portal</h2>
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Making a Difference</p>
             </div>
           </div>
 
-          <div class="flex items-center gap-8">
+          <div class="flex items-center gap-4 md:gap-8">
             <!-- Availability Toggle -->
-            <div class="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Status:</span>
+            <div class="hidden md:flex items-center gap-3 px-5 py-2.5 bg-slate-50 rounded-2xl border border-slate-100">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</span>
               <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full" [ngClass]="isAvailable() ? 'bg-accent-500 shadow-[0_0_8px_rgba(0,200,150,0.5)]' : 'bg-slate-300'"></span>
-                <span class="text-xs font-bold" [ngClass]="isAvailable() ? 'text-accent-600' : 'text-slate-500'">{{ isAvailable() ? 'Available' : 'Offline' }}</span>
+                <span class="w-2 h-2 rounded-full" [ngClass]="isAvailable() ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'"></span>
+                <span class="text-xs font-bold" [ngClass]="isAvailable() ? 'text-emerald-600' : 'text-slate-500'">{{ isAvailable() ? 'Active' : 'Offline' }}</span>
               </div>
-              <button (click)="toggleAvailability()" class="w-8 h-4 bg-slate-200 rounded-full relative transition-all" [ngClass]="{'bg-accent-500': isAvailable()}">
-                <div class="absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-all" [style.left.px]="isAvailable() ? 17 : 2"></div>
+              <button (click)="toggleAvailability()" class="w-9 h-5 bg-slate-200 rounded-full relative transition-all" [ngClass]="{'bg-emerald-500': isAvailable()}">
+                <div class="absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-all" [style.left.px]="isAvailable() ? 16 : 2"></div>
               </button>
             </div>
 
-            <button class="relative w-10 h-10 flex items-center justify-center text-slate-400 hover:text-primary-500 transition-colors">
-              <i class="fas fa-bell text-lg"></i>
-              <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-            <div class="w-px h-6 bg-slate-200"></div>
-            <div class="flex items-center gap-3 cursor-pointer group">
-              <div class="text-right">
-                <p class="text-sm font-bold text-slate-900 group-hover:text-primary-500 transition-colors">{{ user()?.name }}</p>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ user()?.role }}</p>
+            <!-- Notifications Dropdown -->
+            <div class="relative group">
+              <button class="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors bg-slate-50 rounded-xl relative">
+                <i class="fas fa-bell text-lg"></i>
+                <span *ngIf="unreadCount() > 0" class="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+              </button>
+              <div class="absolute right-0 top-full mt-2 w-72 md:w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all p-4 z-[100] transform origin-top-right scale-95 group-hover:scale-100">
+                <div class="flex items-center justify-between px-4 py-2 mb-4 border-b border-slate-50">
+                  <span class="text-xs font-bold text-slate-900 uppercase tracking-widest">Broadcasts</span>
+                  <span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded text-[9px] font-bold">{{ notifications().length }} Alerts</span>
+                </div>
+                <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
+                  <div *ngFor="let note of notifications()" class="p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                    <p class="text-xs font-bold text-slate-900 mb-1" [class.text-red-600]="note.type === 'emergency'">{{ note.title }}</p>
+                    <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">{{ note.message }}</p>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-2 block text-right">{{ note.createdAt | date:'shortTime' }}</span>
+                  </div>
+                  <div *ngIf="notifications().length === 0" class="p-8 text-center text-slate-400 italic text-sm">
+                    No new broadcasts.
+                  </div>
+                </div>
               </div>
-              <div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 overflow-hidden">
-                <i class="fas fa-user"></i>
+            </div>
+            
+            <div class="w-px h-6 bg-slate-200 hidden sm:block"></div>
+            
+            <div class="flex items-center gap-3">
+              <div class="text-right hidden sm:block">
+                <p class="text-sm font-bold text-slate-900 leading-tight">{{ user()?.name }}</p>
+                <p class="text-[9px] font-bold text-emerald-500 uppercase tracking-widest leading-none">Verified Volunteer</p>
+              </div>
+              <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 shadow-inner shrink-0">
+                <i class="fas fa-user text-lg"></i>
               </div>
             </div>
           </div>
         </header>
 
-        <!-- DASHBOARD CONTENT -->
-        <div class="p-10 space-y-10">
-          <!-- WELCOME -->
-          <div class="space-y-6">
-            <div>
-              <h1 class="text-3xl font-display font-extrabold text-slate-900 mb-2">Good Day, {{ user()?.name }}! 👋</h1>
-              <p class="text-slate-500 font-medium">You are currently helping in <span class="text-primary-500 font-bold">{{ joinedCampaigns().length }} campaigns</span>. Keep up the great work!</p>
-            </div>
-          </div>
-
-          <!-- STATS GRID -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div *ngFor="let stat of stats()" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 relative overflow-hidden group">
-              <div class="relative z-10 flex flex-col">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl mb-4 transition-all group-hover:scale-110 shadow-lg" [ngClass]="stat.bg">
-                  <i [class]="stat.icon"></i>
-                </div>
-                <div class="text-3xl font-display font-extrabold text-slate-900 mb-1">{{ stat.value }}</div>
-                <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ stat.label }}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- JOINED CAMPAIGNS -->
-            <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-              <div class="p-6 border-b border-slate-50 flex items-center justify-between">
-                <h3 class="font-display font-bold text-slate-900">📢 My Joined Campaigns</h3>
-                <a routerLink="/campaigns" class="text-sm font-bold text-primary-500 hover:underline">Find More</a>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead class="bg-slate-50">
-                    <tr>
-                      <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Campaign</th>
-                      <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">NGO</th>
-                      <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Category</th>
-                      <th class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-50">
-                    <tr *ngFor="let camp of joinedCampaigns()" class="hover:bg-slate-50/50 transition-colors">
-                      <td class="px-6 py-5">
-                        <div class="font-bold text-slate-900 text-sm">{{ camp.title }}</div>
-                        <div class="text-[10px] text-slate-400 font-medium">{{ camp.location }}</div>
-                      </td>
-                      <td class="px-6 py-5">
-                        <div class="text-sm font-medium text-slate-600">{{ camp.ngo?.name }}</div>
-                      </td>
-                      <td class="px-6 py-5">
-                        <span class="px-3 py-1 bg-primary-50 text-primary-600 rounded-full text-[10px] font-bold uppercase">{{ camp.category }}</span>
-                      </td>
-                      <td class="px-6 py-5 text-center">
-                        <a [routerLink]="['/campaigns', camp._id]" class="px-4 py-2 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-600 font-bold rounded-xl text-xs transition-all">Details</a>
-                      </td>
-                    </tr>
-                    <tr *ngIf="joinedCampaigns().length === 0">
-                      <td colspan="4" class="px-6 py-10 text-center text-slate-400 italic">You haven't joined any campaigns yet.</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- ACHIEVEMENTS -->
-            <div class="space-y-8">
-              <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-50">
-                  <h3 class="font-display font-bold text-slate-900">🏆 Achievements</h3>
-                </div>
-                <div class="p-6 space-y-4">
-                  <div class="flex items-center gap-4 p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                    <div class="text-2xl">🥇</div>
-                    <div>
-                      <h4 class="font-bold text-amber-900 text-sm">Top Contributor</h4>
-                      <p class="text-[10px] text-amber-700">Ranked top 10 this month</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-4 p-4 bg-blue-50 rounded-2xl border border-blue-100 opacity-50">
-                    <div class="text-2xl">🏅</div>
-                    <div>
-                      <h4 class="font-bold text-blue-900 text-sm">100 Hour Hero</h4>
-                      <p class="text-[10px] text-blue-700">92/100 hours completed</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- IMPACT CARD -->
-              <div class="bg-primary-900 rounded-3xl p-6 text-white relative overflow-hidden">
-                <div class="relative z-10">
-                  <h3 class="font-display font-bold mb-4 text-sm uppercase tracking-widest text-primary-400">Total Impact</h3>
-                  <div class="text-4xl font-display font-extrabold mb-2">5,240</div>
-                  <p class="text-xs text-primary-200">Lives touched through your volunteer work and contributions.</p>
-                </div>
-                <div class="absolute -bottom-4 -right-4 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl"></div>
-              </div>
-            </div>
-          </div>
+        <!-- CHILD ROUTES CONTENT -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+          <router-outlet></router-outlet>
         </div>
       </main>
     </div>
   `,
   styles: [`
     :host { display: block; }
-    .dashboard-layout {
-      height: 100vh;
-      overflow: hidden;
-    }
+    .dashboard-layout { height: 100vh; overflow: hidden; }
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   `]
 })
 export class VolunteerDashboardComponent implements OnInit {
   authService = inject(AuthService);
-  campaignService = inject(CampaignService);
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  
   user = this.authService.currentUser;
+  isSidebarOpen = signal(false);
   isAvailable = signal(true);
-
-  stats = signal([
-    { label: 'Tasks Completed', value: '24', icon: 'fas fa-check-circle', bg: 'bg-primary-100 text-primary-600' },
-    { label: 'Volunteer Hours', value: '128h', icon: 'fas fa-clock', bg: 'bg-accent-100 text-accent-600' },
-    { label: 'Points Earned', value: '850', icon: 'fas fa-star', bg: 'bg-orange-100 text-orange-600' },
-    { label: 'Certificates', value: '4', icon: 'fas fa-certificate', bg: 'bg-red-100 text-red-600' }
-  ]);
-
-  joinedCampaigns = signal<any[]>([]);
-
-  constructor(private router: Router) {}
+  
+  notifications = signal<any[]>([]);
+  unreadCount = signal(0);
 
   ngOnInit(): void {
-    this.fetchJoinedCampaigns();
+    this.fetchNotifications();
   }
 
-  fetchJoinedCampaigns() {
-    this.campaignService.getJoinedCampaigns().subscribe({
-      next: (res) => {
-        this.joinedCampaigns.set(res.data);
+  fetchNotifications() {
+    this.http.get<any>(`${environment.apiUrl}/notifications`).subscribe((res: ApiResponse) => {
+      if (res.success) {
+        this.notifications.set(res.data);
+        this.unreadCount.set(res.data.length);
       }
     });
   }
@@ -249,6 +198,7 @@ export class VolunteerDashboardComponent implements OnInit {
   toggleAvailability() {
     this.isAvailable.update(v => !v);
   }
+
 
   logout() {
     this.authService.logout();

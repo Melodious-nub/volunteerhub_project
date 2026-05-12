@@ -39,6 +39,14 @@ const UserSchema = new mongoose.Schema({
     enum: ['active', 'inactive', 'suspended'],
     default: 'active'
   },
+  volunteerHours: {
+    type: Number,
+    default: 0
+  },
+  points: {
+    type: Number,
+    default: 0
+  },
   lastLogin: {
     type: Date,
     default: Date.now

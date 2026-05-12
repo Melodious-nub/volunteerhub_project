@@ -28,6 +28,8 @@ app.use('/api/sos', require('./routes/sos'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/contacts', require('./routes/contacts'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/volunteers', require('./routes/volunteers'));
+app.use('/api/ngo', require('./routes/ngo'));
 // =========================
 
 // 404 handler
